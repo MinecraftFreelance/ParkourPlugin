@@ -1,0 +1,97 @@
+---
+name: "Release"
+
+on:
+  push:
+    branches:
+    - main
+    paths-ignore:
+    - README.md
+      
+env:
+  VERSION_FILE: package.json
+  ADDITIONAL_VERSION_FILE: package-lock.json
+  VERSION_EXTRACT_PATTERN: '"version": "([^"]+)",'
+  VERSION_REPLACE_PATTERN: '"version": "\1",'
+  GH_USER_NAME: github.actor
+  TMP_SUFFIX: _updated
+  README_FILE: README.md
+  README_VERSION_PLACEHOLDER: $LATEST_VERSION
+
+jobs:
+  build:
+    runs-on: "ubuntu-latest"
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Setup git credentials
+      run: |
+        git config user.name 'Billy Robinson'
+        git config user.email 'github@billy.ws'
+        git config user.password ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Generate versions
+      uses: HardNorth/github-version-generate@v1
+      with:
+        version-source: file
+        version-file: ${{ env.VERSION_FILE }}
+        version-file-extraction-pattern: ${{ env.VERSION_EXTRACT_PATTERN }}
+        
+    - name: Set up JDK 11
+      uses: actions/setup-java@v3
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        cache: maven
+    
+    - name: Build with Maven
+      run: mvn -B package --file pom.xml
+      
+    - name: Tagging new version
+      id: newVersionTag
+      run: |
+        RELEASE_TAG="v${{ env.RELEASE_VERSION }}"
+        MINOR_TAG="v${{ env.RELEASE_VERSION_MAJOR }}.${{ env.RELEASE_VERSION_MINOR }}"
+        MAJOR_TAG="v${{ env.RELEASE_VERSION_MAJOR }}"
+
+        git tag -d "${MINOR_TAG}" || true
+        git tag -d "${MAJOR_TAG}" || true
+        git push origin ":${MINOR_TAG}" || true
+        git push origin ":${MAJOR_TAG}" || true
+
+        git tag -a "${RELEASE_TAG}" -m "Release ${{ env.RELEASE_VERSION }}"
+        git tag -a "${MINOR_TAG}" -m "Tag latest minor version"
+        git tag -a "${MAJOR_TAG}" -m "Tag latest major version"
+        git push --tags
+
+    - name: Create Release
+      id: createRelease
+      uses: marvinpinto/action-automatic-releases@latest
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: v${{ env.RELEASE_VERSION }}
+        prerelease: false
+        title: Release ${{ env.RELEASE_VERSION }}
+        files: |
+          README.md
+          *.jar
+                
+    - name: Update version file
+      id: versionFileUpdate
+      run: |
+        export CURRENT_VERSION_VALUE=`echo '${{ env.CURRENT_VERSION }}' | sed -E 's/(.*)/${{ env.VERSION_REPLACE_PATTERN }}/'`
+        export NEXT_VERSION_VALUE=`echo '${{ env.NEXT_VERSION }}' | sed -E 's/(.*)/${{ env.VERSION_REPLACE_PATTERN }}/'`
+        sed "s/${CURRENT_VERSION_VALUE}/${NEXT_VERSION_VALUE}/g" ${{ env.VERSION_FILE }} > ${{ env.VERSION_FILE }}${{ env.TMP_SUFFIX }}
+        sed "s/${CURRENT_VERSION_VALUE}/${NEXT_VERSION_VALUE}/g" ${{ env.ADDITIONAL_VERSION_FILE }} > ${{ env.ADDITIONAL_VERSION_FILE }}${{ env.TMP_SUFFIX }}
+        rm ${{ env.VERSION_FILE }}
+        mv ${{ env.VERSION_FILE }}${{ env.TMP_SUFFIX }} ${{ env.VERSION_FILE }}
+        rm ${{ env.ADDITIONAL_VERSION_FILE }}
+        mv ${{ env.ADDITIONAL_VERSION_FILE }}${{ env.TMP_SUFFIX }} ${{ env.ADDITIONAL_VERSION_FILE }}
+        git add ${{ env.VERSION_FILE }}
+        git add ${{ env.ADDITIONAL_VERSION_FILE }}
+        git commit -m "(v ${{ env.RELEASE_VERSION }}) ${{ github.event.head_commit.message }}"
+        git push

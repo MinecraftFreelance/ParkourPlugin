@@ -1,0 +1,8 @@
+name: TemplatePlugin
+version: ${project.version}
+main: ws.billy.templateplugin.TemplatePlugin
+author: "BillyDotWS"
+commands:
+  template:
+    usage: /<command>
+    description: A template command
