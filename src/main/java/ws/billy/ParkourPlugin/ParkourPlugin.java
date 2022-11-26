@@ -1,7 +1,7 @@
-package ws.billy.templateplugin;
+package ws.billy.ParkourPlugin;
 
 import io.github.classgraph.ClassGraph;
-import ws.billy.templateplugin.CommandHandler.Objects.Command;
+import ws.billy.ParkourPlugin.CommandHandler.Objects.Command;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -9,12 +9,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.List;
 import java.util.logging.Level;
 
-public class TemplatePlugin extends JavaPlugin {
+public class ParkourPlugin extends JavaPlugin {
 
-	private static TemplatePlugin instance;
+	private static ParkourPlugin instance;
 	private static PluginManager pluginManager;
 
-	public static TemplatePlugin getInstance () {return instance;}
+	public static ParkourPlugin getInstance () {return instance;}
 	public static PluginManager getPluginManager () {return pluginManager;}
 
 	public static String getPluginName() {return getInstance().getName();}

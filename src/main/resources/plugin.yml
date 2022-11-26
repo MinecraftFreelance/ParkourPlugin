@@ -1,6 +1,6 @@
-name: TemplatePlugin
+name: ParkourPlugin
 version: ${project.version}
-main: ws.billy.templateplugin.TemplatePlugin
+main: ws.billy.ParkourPlugin.ParkourPlugin
 author: "BillyDotWS"
 commands:
   template:

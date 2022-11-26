@@ -1,7 +1,7 @@
-package ws.billy.templateplugin.CommandHandler.Objects;
+package ws.billy.ParkourPlugin.CommandHandler.Objects;
 
-import ws.billy.templateplugin.CommandHandler.Utility.CooldownManager;
-import ws.billy.templateplugin.Configuration.Messages;
+import ws.billy.ParkourPlugin.CommandHandler.Utility.CooldownManager;
+import ws.billy.ParkourPlugin.Configuration.Messages;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;

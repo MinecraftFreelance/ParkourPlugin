@@ -1,4 +1,4 @@
-package ws.billy.templateplugin.Configuration;
+package ws.billy.ParkourPlugin.Configuration;
 
 public class Messages {
 

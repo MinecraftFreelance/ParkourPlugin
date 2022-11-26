@@ -1,4 +1,4 @@
-package ws.billy.templateplugin.CommandHandler.Utility;
+package ws.billy.ParkourPlugin.CommandHandler.Utility;
 
 import java.util.HashMap;
 import java.util.Map;
