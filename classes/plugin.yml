@@ -1,4 +1,4 @@
 name: ParkourPlugin
-version: ${project.version}
+version: development
 main: ws.billy.ParkourPlugin.ParkourPlugin
 author: "BillyDotWS"
