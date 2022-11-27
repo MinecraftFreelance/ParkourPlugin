@@ -4,15 +4,15 @@ import io.github.classgraph.ClassGraph;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import ws.billy.ParkourPlugin.Database.DatabaseExecutor;
 import ws.billy.ParkourPlugin.Utility.Listener;
-import ws.billy.ParkourPlugin.Database.Database;
+import ws.billy.ParkourPlugin.Database.DatabaseConnection;
 import ws.billy.ParkourPlugin.Managers.LeaderboardManager;
 import ws.billy.ParkourPlugin.Managers.ParkourManager;
 import ws.billy.ParkourPlugin.Configuration.Configuration;
 
 import java.io.File;
 import java.util.List;
-import java.util.logging.Level;
 
 public class ParkourPlugin extends JavaPlugin {
 	private static Configuration configuration;
@@ -20,7 +20,12 @@ public class ParkourPlugin extends JavaPlugin {
     private static PluginManager pluginManager;
 	private static LeaderboardManager leaderboardManager;
 	private static ParkourManager parkourManager;
-	private static Database database;
+	private static DatabaseConnection database;
+	private static DatabaseExecutor executor;
+
+	public static DatabaseExecutor getExecutor() {
+		return executor;
+	}
 
 	public static LeaderboardManager getLeaderboardManager() {
 		return leaderboardManager;
@@ -34,7 +39,7 @@ public class ParkourPlugin extends JavaPlugin {
 		return parkourManager;
 	}
 
-	public static Database getDatabase() {
+	public static DatabaseConnection getDatabase() {
 		return database;
 	}
 
@@ -47,20 +52,20 @@ public class ParkourPlugin extends JavaPlugin {
 	}
 
 	public static String getPluginName() {
-		return getInstance().getName();
+		return getInstance().getClass().getSimpleName();
 	}
 
 	public static void log(final String log) {
-		Bukkit.getLogger().log(Level.ALL, "[" + getPluginName() + "] " + log);
+		Bukkit.getLogger().info("[" + getPluginName() + "] " + log);
 	}
 
 	public static void error(final String log) {
-		Bukkit.getLogger().warning("[" + getPluginName() + "] " + log);
+		Bukkit.getLogger().severe("[" + getPluginName() + "] " + log);
 	}
 
 	@Override
 	public void onLoad() {
-		enableReflection(getPluginName().toLowerCase());
+		enableReflection(this.getClass().getSimpleName());
 	}
 
 	/**
@@ -108,12 +113,26 @@ public class ParkourPlugin extends JavaPlugin {
 
 		// setup and connect to SQL database
 		log("Connecting to your SQL database");
-		database = new Database(System.getenv("DATABASE_HOST"), Long.parseLong(System.getenv("DATABASE_PORT")), System.getenv("DATABASE_USERNAME"), System.getenv("DATABASE_PASSWORD"));
+		if (System.getenv("DATABASE_HOST") == null
+				|| System.getenv("DATABASE_PORT") == null
+				|| System.getenv("DATABASE_USERNAME") == null
+				|| System.getenv("DATABASE_PASSWORD") == null
+				|| System.getenv("DATABASE_DATABASE") == null) {
+			error("You have not setup environment variables correctly!");
+			getPluginManager().disablePlugin(this);
+			return;
+		}
+		database = new DatabaseConnection(System.getenv("DATABASE_HOST"),
+				Long.parseLong(System.getenv("DATABASE_PORT")),
+				System.getenv("DATABASE_USERNAME"),
+				System.getenv("DATABASE_PASSWORD"),
+				System.getenv("DATABASE_DATABASE"));
+		executor = new DatabaseExecutor(getDatabase());
 
 		// create plugin specific objects
 		log("Loading leaderboards");
-		leaderboardManager = new LeaderboardManager();
-		parkourManager = new ParkourManager(configuration.getCheckpointLocations());
+		leaderboardManager = new LeaderboardManager(getExecutor().getTopFivePlayers().stream().toList());
+		parkourManager = new ParkourManager(getConfigurationManager().getCheckpointLocations());
 
 	}
 

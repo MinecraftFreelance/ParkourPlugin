@@ -1,16 +1,16 @@
 package ws.billy.ParkourPlugin.Managers;
 
 import ws.billy.ParkourPlugin.Utility.Listener;
-import ws.billy.ParkourPlugin.ParkourPlugin;
 
 import java.util.List;
 import java.util.Optional;
 
 public class LeaderboardManager extends Listener {
 
-	private final List<PlayerManager> _top5Players = ParkourPlugin.getDatabase().getTopFivePlayers();
+	private final List<PlayerManager> _top5Players;
 
-	public LeaderboardManager () {
+	public LeaderboardManager(final List<PlayerManager> initialLeaderboard) {
+		_top5Players = initialLeaderboard;
 	}
 
 	public Optional<PlayerManager> getLeaderboardPlayer(final int position) {

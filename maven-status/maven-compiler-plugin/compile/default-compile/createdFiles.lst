@@ -2,11 +2,12 @@ ws\billy\ParkourPlugin\Managers\PlayerManager.class
 ws\billy\ParkourPlugin\Managers\ParkourManager.class
 ws\billy\ParkourPlugin\Configuration\Configuration.class
 ws\billy\ParkourPlugin\CustomEvents\CheckpointReachedEvent.class
-ws\billy\ParkourPlugin\Database\Database.class
 ws\billy\ParkourPlugin\CustomEvents\ParkourEndedEvent.class
-ws\billy\ParkourPlugin\Database\Database$1.class
 ws\billy\ParkourPlugin\Utility\Listener.class
+ws\billy\ParkourPlugin\Database\DatabaseConnection.class
+ws\billy\ParkourPlugin\Database\DatabaseExecutor.class
 ws\billy\ParkourPlugin\Listeners\WorldguardListener.class
+ws\billy\ParkourPlugin\Database\DatabaseExecutor$1.class
 ws\billy\ParkourPlugin\ParkourPlugin.class
 ws\billy\ParkourPlugin\CustomEvents\LeaderboardModified.class
 ws\billy\ParkourPlugin\Configuration\Messages.class
@@ -14,4 +15,3 @@ ws\billy\ParkourPlugin\CustomEvents\ParkourStartedEvent.class
 ws\billy\ParkourPlugin\Listeners\CheckpointHitListener.class
 ws\billy\ParkourPlugin\Managers\LeaderboardManager.class
 ws\billy\ParkourPlugin\Scoreboard\Scoreboard.class
-ws\billy\ParkourPlugin\Database\Listeners\LeaveListener.class
