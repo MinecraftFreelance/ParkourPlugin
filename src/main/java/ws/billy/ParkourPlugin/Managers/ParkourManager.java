@@ -1,13 +1,18 @@
 package ws.billy.ParkourPlugin.Managers;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.bukkit.Location;
 
-import java.util.List;
+import java.util.*;
 
 public class ParkourManager {
 
 	public List<Location> getLocations() {
 		return _locations;
+	}
+
+	public int getCheckpointNumber(final Location location) {
+		return ArrayUtils.indexOf(getLocations().toArray(), location);
 	}
 
 	private final List<Location> _locations;

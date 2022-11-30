@@ -1,36 +1,50 @@
 package ws.billy.ParkourPlugin.Managers;
 
+import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.entity.Player;
+import ws.billy.ParkourPlugin.Configuration.Messages;
 import ws.billy.ParkourPlugin.ParkourPlugin;
-import ws.billy.ParkourPlugin.Utility.Listener;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
-public class PlayerManager extends Listener {
+public class PlayerManager {
 
-	@EventHandler
-	private void playerLogout(final PlayerQuitEvent e) {
-		final Optional<PlayerManager> playerManager = getParkourPlayers().stream().filter(pl -> pl.getPlayer().equals(e.getPlayer())).findFirst();
-		playerManager.ifPresent(manager -> ParkourPlugin.getExecutor().updatePlayer(manager));
-	}
+	private static final Map<UUID, PlayerManager> _parkourPlayers = new HashMap<>();
+	private final OfflinePlayer _player;
+	private long _bestAttempt;
+	private long _currentAttemptStart;
+	private Location _checkpoint;
 
-	public PlayerManager(final OfflinePlayer player, final long bestAttempt, final boolean persistent) {
+	private PlayerManager(final OfflinePlayer player, final long bestAttempt) {
 		this._player = player;
 		this._bestAttempt = bestAttempt;
-		if (persistent) {
-			_parkourPlayers.add(this);
+	}
+
+	public static PlayerManager getInstance(final OfflinePlayer player, final boolean fetchFromDatabase) {
+		if (getParkourPlayers().containsKey(player.getUniqueId())) {
+			return getParkourPlayers().get(player.getUniqueId());
+		} else {
+			if (fetchFromDatabase) {
+				final PlayerManager manager = ParkourPlugin.getExecutor().get(player.getUniqueId());
+				if (manager == null) {
+					return new PlayerManager(player, -1);
+				}
+				return manager;
+			}
+			final PlayerManager om = new PlayerManager(player, -1);
+			_parkourPlayers.put(player.getUniqueId(), om);
+			return om;
 		}
 	}
 
-	public static List<PlayerManager> getParkourPlayers() {
+	public static Map<UUID, PlayerManager> getParkourPlayers() {
 		return _parkourPlayers;
 	}
 
-	private static final List<PlayerManager> _parkourPlayers = new ArrayList<>();
+	public static void removePlayerReference(final PlayerManager manager) {
+		_parkourPlayers.remove(manager);
+	}
 
 	public OfflinePlayer getPlayer() {
 		return _player;
@@ -40,12 +54,31 @@ public class PlayerManager extends Listener {
 		return _bestAttempt;
 	}
 
-	private final OfflinePlayer _player;
-
 	public void setBestAttempt(final long bestAttempt) {
 		this._bestAttempt = bestAttempt;
 	}
 
-	private long _bestAttempt;
+	public void sendMessage(final String message) {
+		if (!getPlayer().isOnline()) {
+			return;
+		}
+		getPlayer().getPlayer().sendMessage(Messages.getPrefix() + message);
+	}
+
+	public Location getCheckpoint() {
+		return _checkpoint;
+	}
+
+	public void setCheckpoint(final Location checkpoint) {
+		this._checkpoint = checkpoint;
+	}
+
+	public long getCurrentAttemptStart() {
+		return _currentAttemptStart;
+	}
+
+	public void setCurrentAttemptStart(final long currentAttemptStart) {
+		this._currentAttemptStart = currentAttemptStart;
+	}
 
 }

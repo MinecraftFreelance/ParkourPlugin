@@ -2,19 +2,28 @@ package ws.billy.ParkourPlugin;
 
 import io.github.classgraph.ClassGraph;
 import org.bukkit.Bukkit;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import ws.billy.ParkourPlugin.Database.Adapter.PlayerManagerAdapter;
 import ws.billy.ParkourPlugin.Database.DatabaseExecutor;
-import ws.billy.ParkourPlugin.Utility.Listener;
+import ws.billy.ParkourPlugin.Listeners.CheckpointHitListener;
+import ws.billy.ParkourPlugin.Listeners.CheckpointReachListener;
+import ws.billy.ParkourPlugin.Listeners.WorldguardListener;
+import ws.billy.ParkourPlugin.Managers.PlayerManager;
+import ws.billy.ParkourPlugin.Scoreboard.Scoreboard;
 import ws.billy.ParkourPlugin.Database.DatabaseConnection;
 import ws.billy.ParkourPlugin.Managers.LeaderboardManager;
 import ws.billy.ParkourPlugin.Managers.ParkourManager;
 import ws.billy.ParkourPlugin.Configuration.Configuration;
 
 import java.io.File;
-import java.util.List;
 
-public class ParkourPlugin extends JavaPlugin {
+public class ParkourPlugin extends JavaPlugin implements Listener {
+
 	private static Configuration configuration;
     private static ParkourPlugin instance;
     private static PluginManager pluginManager;
@@ -22,6 +31,8 @@ public class ParkourPlugin extends JavaPlugin {
 	private static ParkourManager parkourManager;
 	private static DatabaseConnection database;
 	private static DatabaseExecutor executor;
+	private static PlayerManagerAdapter adapter;
+	private static Scoreboard scoreboard;
 
 	public static DatabaseExecutor getExecutor() {
 		return executor;
@@ -76,27 +87,6 @@ public class ParkourPlugin extends JavaPlugin {
 		new ClassGraph().acceptPackages("ws.billy." + packageSuffix).enableClassInfo().scan();
 	}
 
-	/**
-	 * Finds all subclasses of Listener through reflection, and creates a new instance of them, which allows them to register themselves.
-	 */
-	private static void instantiateEventHandlers() {
-		for (final Class<?> classExtendingListener : getSubclasses("ws.billy." + getPluginName().toLowerCase(), Listener.class)) {
-			try {
-				classExtendingListener.newInstance();
-			} catch (final Exception ignored) { } // Only real reason for this to happen is when a class with events has a
-			// non-default constructor such as Jumper. This case can be ignored, as it gets instantiated anyway.
-		}
-	}
-
-	/**
-	 * Uses ClassGraph reflection API to get a list of subclasses of a class, inside a specific package.
-	 */
-	private static List<? extends Class<?>> getSubclasses(final String packageName, final Class<?> classObject) {
-		return new ClassGraph().acceptPackages(packageName)
-				.enableClassInfo().scan().getSubclasses(classObject)
-				.loadClasses(classObject);
-	}
-
 	@Override
 	public void onEnable() {
 		instance = this;
@@ -104,12 +94,11 @@ public class ParkourPlugin extends JavaPlugin {
 
 		// event registers
 		log("Loading plugin events");
-		instantiateEventHandlers();
+		registerEventListeners();
 
 		// get configuration information
 		log("Loading plugin configuration");
-		configuration = new Configuration();
-		configuration.setConfigurationFile(new File(this.getDataFolder(), "checkpoints.json"));
+		registerConfiguration();
 
 		// setup and connect to SQL database
 		log("Connecting to your SQL database");
@@ -122,18 +111,57 @@ public class ParkourPlugin extends JavaPlugin {
 			getPluginManager().disablePlugin(this);
 			return;
 		}
+		registerDatabase();
+
+		// create plugin specific objects
+		log("Loading leaderboards");
+		registerLeaderboard();
+	}
+
+	private void registerEventListeners() {
+		new CheckpointReachListener();
+		new CheckpointHitListener();
+		new WorldguardListener();
+		getPluginManager().registerEvents(this, this);
+	}
+
+	private void registerConfiguration() {
+		configuration = new Configuration();
+		configuration.setConfigurationFile(new File(this.getDataFolder(), "checkpoints.json"));
+		configuration.generateIfNull();
+	}
+
+	private void registerDatabase() {
 		database = new DatabaseConnection(System.getenv("DATABASE_HOST"),
 				Long.parseLong(System.getenv("DATABASE_PORT")),
 				System.getenv("DATABASE_USERNAME"),
 				System.getenv("DATABASE_PASSWORD"),
 				System.getenv("DATABASE_DATABASE"));
 		executor = new DatabaseExecutor(getDatabase());
+		adapter = new PlayerManagerAdapter();
+		getDatabase().getExecutor().registerAdapter(PlayerManager.class, adapter);
+	}
 
-		// create plugin specific objects
-		log("Loading leaderboards");
+	private void registerLeaderboard() {
 		leaderboardManager = new LeaderboardManager(getExecutor().getTopFivePlayers().stream().toList());
 		parkourManager = new ParkourManager(getConfigurationManager().getCheckpointLocations());
+		scoreboard = new Scoreboard();
+	}
 
+	@EventHandler
+	private void playerLogin(final PlayerJoinEvent e) {
+		PlayerManager.getInstance(e.getPlayer(), true).setCheckpoint(null);
+	}
+
+	@EventHandler
+	private void playerLogout(final PlayerQuitEvent e) {
+		PlayerManager playerManager = PlayerManager.getInstance(e.getPlayer(), false);
+		ParkourPlugin.getExecutor().updatePlayer(playerManager);
+		// remove the player object if they're not on the leaderboard
+		if (getLeaderboardManager().isOnLeaderboard(playerManager)) {
+			return;
+		}
+		PlayerManager.removePlayerReference(playerManager);
 	}
 
 }

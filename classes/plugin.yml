@@ -2,3 +2,5 @@ name: ParkourPlugin
 version: development
 main: ws.billy.ParkourPlugin.ParkourPlugin
 author: "BillyDotWS"
+api-version: 1.18
+depend: [WorldGuard]

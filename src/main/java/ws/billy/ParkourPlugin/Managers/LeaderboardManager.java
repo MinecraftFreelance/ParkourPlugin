@@ -1,5 +1,9 @@
 package ws.billy.ParkourPlugin.Managers;
 
+import org.bukkit.event.EventHandler;
+import org.bukkit.scheduler.BukkitRunnable;
+import ws.billy.ParkourPlugin.CustomEvents.LeaderboardModified;
+import ws.billy.ParkourPlugin.ParkourPlugin;
 import ws.billy.ParkourPlugin.Utility.Listener;
 
 import java.util.List;
@@ -7,7 +11,11 @@ import java.util.Optional;
 
 public class LeaderboardManager extends Listener {
 
-	private final List<PlayerManager> _top5Players;
+	public List<PlayerManager> getLeaderboard() {
+		return _top5Players;
+	}
+
+	private List<PlayerManager> _top5Players;
 
 	public LeaderboardManager(final List<PlayerManager> initialLeaderboard) {
 		_top5Players = initialLeaderboard;
@@ -24,6 +32,9 @@ public class LeaderboardManager extends Listener {
 	 */
 	public int checkPotentialRecordScore(final PlayerManager playerManager) {
 		final int position = 0;
+		if (_top5Players.isEmpty()) {
+			return 1;
+		}
 		for (final PlayerManager toBeat : _top5Players) {
 			if (playerManager.getBestAttempt() > toBeat.getBestAttempt()) {
 				return position;
@@ -32,8 +43,17 @@ public class LeaderboardManager extends Listener {
 		return -1;
 	}
 
+	public boolean isOnLeaderboard(final PlayerManager playerManager) {
+		return _top5Players.contains(playerManager);
+	}
+
 	public void updateLeaderboard() {
-		//
+		_top5Players = ParkourPlugin.getExecutor().getTopFivePlayers().stream().toList();
+	}
+
+	@EventHandler
+	private void leaderboardUpdate(final LeaderboardModified e) {
+		updateLeaderboard();
 	}
 
 }

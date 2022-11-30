@@ -19,7 +19,7 @@ public class DatabaseExecutor {
 			public void run() {
 				autoSave();
 			}
-		}.runTaskTimer(ParkourPlugin.getInstance(), 300, 300);
+		}.runTaskTimer(ParkourPlugin.getInstance(), 3000, 3000);
 		createTable();
 	}
 
@@ -27,10 +27,13 @@ public class DatabaseExecutor {
 		_connection.getExecutor().execute("CREATE TABLE IF NOT EXISTS " + _table + "(uuid VARCHAR(72) PRIMARY KEY, bestAttempt BIGINT);");
 	}
 
-	public void updatePlayer(final PlayerManager playerManager) {
+	public void updatePlayer(PlayerManager playerManager) {
+		long bestAttempt = playerManager.getBestAttempt();
 		if (contains(playerManager.getPlayer().getUniqueId())) {
+			playerManager.setBestAttempt(bestAttempt);
 			update(playerManager);
 		} else {
+			playerManager.setBestAttempt(bestAttempt);
 			insert(playerManager);
 		}
 	}
@@ -80,9 +83,16 @@ public class DatabaseExecutor {
 	}
 
 	public void autoSave() {
-		ParkourPlugin.log("Automatically saving parkour statistics");
-		PlayerManager.getParkourPlayers().forEach(this::updatePlayer);
+		ParkourPlugin.log("Automatically saving parkour statistics & syncing leaderboard");
+		PlayerManager.getParkourPlayers().forEach((uuid, user) -> {
+			updatePlayer(user);
+		});
+		ParkourPlugin.getLeaderboardManager().updateLeaderboard();
 		ParkourPlugin.log("Finished saving parkour statistics");
+	}
+
+	public void deleteTable() {
+		_connection.getExecutor().execute("DROP TABLE " + _table + ";");
 	}
 
 }

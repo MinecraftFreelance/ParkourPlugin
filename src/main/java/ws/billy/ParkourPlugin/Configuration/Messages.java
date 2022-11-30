@@ -6,7 +6,7 @@ import ws.billy.ParkourPlugin.ParkourPlugin;
 public class Messages {
 
 	public static String getPrefix() {
-		return ParkourPlugin.getPluginName();
+		return ParkourPlugin.getPluginName() + " - ";
 	}
 
 	public static String getPermissionsErrorMessage() {
